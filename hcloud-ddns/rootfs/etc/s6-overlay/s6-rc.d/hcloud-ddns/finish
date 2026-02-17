@@ -1,0 +1,8 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Hetzner DNS DDNS Addon
+# Finish script for hcloud-ddns service
+# ==============================================================================
+
+bashio::log.info "Hetzner DNS DDNS service stopped"

@@ -1,0 +1,22 @@
+---
+name: Hetzner DNS DDNS
+version: "1.0.0"
+slug: hcloud-ddns
+description: Automatically update DNS records via Hetzner DNS API
+url: https://github.com/prindom/hcloud-ddns
+init: false
+arch:
+  - aarch64
+  - amd64
+options:
+  api_key: ""
+  zone_id: ""
+  domain: ""
+  update_interval: "hourly"
+  log_level: "info"
+schema:
+  api_key: password
+  zone_id: str
+  domain: str
+  update_interval: list(hourly|daily|weekly)
+  log_level: list(trace|debug|info|notice|warning|error|fatal)

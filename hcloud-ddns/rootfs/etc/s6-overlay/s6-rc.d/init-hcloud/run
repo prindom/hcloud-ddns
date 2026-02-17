@@ -1,0 +1,57 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Hetzner Cloud DDNS Addon
+# Init script - validates API key and configuration
+# ==============================================================================
+
+bashio::log.info "Initializing Hetzner DNS DDNS addon..."
+
+# Validate API key
+API_KEY=$(bashio::config 'api_key')
+if [ -z "${API_KEY}" ]; then
+    bashio::log.fatal "API key is not configured"
+    exit 1
+fi
+
+# Store API key securely
+mkdir -p /root/.config
+chmod 700 /root/.config
+echo "${API_KEY}" > /root/.config/hetzner-dns-token
+chmod 600 /root/.config/hetzner-dns-token
+
+bashio::log.info "API key configured securely"
+
+# Validate zone ID
+ZONE_ID=$(bashio::config 'zone_id')
+if [ -z "${ZONE_ID}" ]; then
+    bashio::log.fatal "Zone ID is not configured"
+    exit 1
+fi
+
+# Validate domain
+DOMAIN=$(bashio::config 'domain')
+if [ -z "${DOMAIN}" ]; then
+    bashio::log.fatal "Domain is not configured"
+    exit 1
+fi
+
+# Test API connection
+bashio::log.info "Testing Hetzner DNS API connection..."
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    -H "Auth-API-Token: ${API_KEY}" \
+    "https://dns.hetzner.com/api/v1/zones/${ZONE_ID}")
+
+if [ "${HTTP_CODE}" = "200" ]; then
+    bashio::log.info "DNS API connection successful"
+elif [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "403" ]; then
+    bashio::log.fatal "Hetzner DNS API authentication failed (HTTP ${HTTP_CODE}). Check your API key and permissions."
+    exit 1
+elif [ "${HTTP_CODE}" = "404" ]; then
+    bashio::log.fatal "Hetzner DNS zone not found (HTTP 404). Check your zone ID and that the token has access to this zone."
+    exit 1
+else
+    bashio::log.warning "Could not verify DNS zone (HTTP ${HTTP_CODE}). This may be a temporary issue, but configuration should be checked."
+fi
+
+bashio::log.info "Initialization complete"
