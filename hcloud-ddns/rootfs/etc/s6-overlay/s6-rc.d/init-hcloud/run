@@ -42,10 +42,16 @@ HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Auth-API-Token: ${API_KEY}" \
     "https://dns.hetzner.com/api/v1/zones/${ZONE_ID}")
 
-if [ "${HTTP_CODE}" != "200" ]; then
-    bashio::log.warning "Could not verify DNS zone (HTTP ${HTTP_CODE}). Check your API key and zone ID."
-else
+if [ "${HTTP_CODE}" = "200" ]; then
     bashio::log.info "DNS API connection successful"
+elif [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "403" ]; then
+    bashio::log.fatal "Hetzner DNS API authentication failed (HTTP ${HTTP_CODE}). Check your API key and permissions."
+    exit 1
+elif [ "${HTTP_CODE}" = "404" ]; then
+    bashio::log.fatal "Hetzner DNS zone not found (HTTP 404). Check your zone ID and that the token has access to this zone."
+    exit 1
+else
+    bashio::log.warning "Could not verify DNS zone (HTTP ${HTTP_CODE}). This may be a temporary issue, but configuration should be checked."
 fi
 
 bashio::log.info "Initialization complete"
