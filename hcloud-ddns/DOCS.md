@@ -1,4 +1,4 @@
-# Home Assistant Addon: Hetzner Cloud DDNS
+# Home Assistant Addon: Hetzner DNS DDNS
 
 Automatically update your DNS records via Hetzner DNS to keep your domain pointing to your current IP address.
 
@@ -20,7 +20,7 @@ Features:
 1. Click the Home Assistant My button below to open the addon on your Home Assistant instance.
 2. Click the "Install" button to install the addon.
 3. Configure the addon (see configuration section below).
-4. Start the "Hetzner Cloud DDNS" addon.
+4. Start the "Hetzner DNS DDNS" addon.
 5. Check the logs to see it in action.
 
 ## Configuration
@@ -30,7 +30,7 @@ Features:
 Example addon configuration:
 
 ```yaml
-api_key: "your-hetzner-cloud-api-key"
+api_key: "your-hetzner-dns-api-token"
 zone_id: "your-zone-id"
 domain: "subdomain.example.com"
 update_interval: "hourly"

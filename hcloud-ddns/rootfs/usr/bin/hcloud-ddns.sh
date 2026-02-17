@@ -1,7 +1,7 @@
 #!/command/with-contenv bashio
 # shellcheck shell=bash
 # ==============================================================================
-# Hetzner Cloud DDNS Addon
+# Hetzner DNS DDNS Addon
 # Main DDNS update script using Hetzner DNS API
 # ==============================================================================
 

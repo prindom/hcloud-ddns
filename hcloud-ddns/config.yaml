@@ -1,8 +1,8 @@
 ---
-name: Hetzner Cloud DDNS
+name: Hetzner DNS DDNS
 version: "1.0.0"
 slug: hcloud-ddns
-description: Automatically update DNS records via Hetzner Cloud DNS
+description: Automatically update DNS records via Hetzner DNS API
 url: https://github.com/prindom/hcloud-ddns
 init: false
 arch:

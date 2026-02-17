@@ -31,8 +31,8 @@ Features:
 ## Installation
 
 1. Add this repository to your Home Assistant instance.
-2. Install the "Hetzner Cloud DDNS" addon.
-3. Configure the addon with your Hetzner Cloud API key, zone ID, and domain.
+2. Install the "Hetzner DNS DDNS" addon.
+3. Configure the addon with your Hetzner DNS API token, zone ID, and domain.
 4. Start the addon.
 
 ## Configuration
@@ -40,7 +40,7 @@ Features:
 Example configuration:
 
 ```yaml
-api_key: "your-hetzner-cloud-api-key"
+api_key: "your-hetzner-dns-api-token"
 zone_id: "your-zone-id"
 domain: "subdomain.example.com"
 update_interval: "hourly"
