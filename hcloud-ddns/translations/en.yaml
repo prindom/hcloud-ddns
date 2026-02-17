@@ -1,0 +1,17 @@
+---
+configuration:
+  api_key:
+    name: Hetzner Cloud API Key
+    description: Your API key from Hetzner Cloud Console
+  zone_id:
+    name: DNS Zone ID
+    description: The ID of your DNS zone in Hetzner Cloud
+  domain:
+    name: Domain Name
+    description: The fully qualified domain name to update (e.g., home.example.com)
+  update_interval:
+    name: Update Interval
+    description: How often to check and update the DNS record
+  log_level:
+    name: Log Level
+    description: Controls the level of log output

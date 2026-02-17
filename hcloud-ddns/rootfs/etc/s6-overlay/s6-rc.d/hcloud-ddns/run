@@ -1,0 +1,10 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Hetzner Cloud DDNS Addon
+# Main service - runs the DDNS update script
+# ==============================================================================
+
+bashio::log.info "Starting Hetzner Cloud DDNS service..."
+
+exec /usr/bin/hcloud-ddns.sh

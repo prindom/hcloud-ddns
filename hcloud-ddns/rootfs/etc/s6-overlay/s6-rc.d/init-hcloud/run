@@ -1,0 +1,85 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Hetzner Cloud DDNS Addon
+# Init script - downloads and configures hcloud CLI
+# ==============================================================================
+
+bashio::log.info "Initializing Hetzner Cloud CLI..."
+
+# Detect architecture
+ARCH=$(uname -m)
+case ${ARCH} in
+    x86_64)
+        HCLOUD_ARCH="amd64"
+        ;;
+    aarch64)
+        HCLOUD_ARCH="arm64"
+        ;;
+    *)
+        bashio::log.fatal "Unsupported architecture: ${ARCH}"
+        exit 1
+        ;;
+esac
+
+bashio::log.info "Detected architecture: ${HCLOUD_ARCH}"
+
+# Get the latest hcloud CLI release
+bashio::log.info "Fetching latest hcloud CLI release..."
+LATEST_RELEASE=$(curl -s https://api.github.com/repos/hetznercloud/cli/releases/latest | jq -r .tag_name)
+if [ -z "${LATEST_RELEASE}" ]; then
+    bashio::log.fatal "Failed to fetch latest hcloud CLI release"
+    exit 1
+fi
+
+bashio::log.info "Latest hcloud CLI version: ${LATEST_RELEASE}"
+
+# Download hcloud CLI
+HCLOUD_URL="https://github.com/hetznercloud/cli/releases/download/${LATEST_RELEASE}/hcloud-linux-${HCLOUD_ARCH}.tar.gz"
+bashio::log.info "Downloading hcloud CLI from ${HCLOUD_URL}"
+
+cd /tmp || exit 1
+if ! curl -fsSL "${HCLOUD_URL}" -o hcloud.tar.gz; then
+    bashio::log.fatal "Failed to download hcloud CLI"
+    exit 1
+fi
+
+# Extract and install
+tar -xzf hcloud.tar.gz
+chmod +x hcloud
+mv hcloud /usr/local/bin/
+rm -f hcloud.tar.gz
+
+bashio::log.info "hcloud CLI installed successfully"
+
+# Verify installation
+if ! /usr/local/bin/hcloud version; then
+    bashio::log.fatal "hcloud CLI installation verification failed"
+    exit 1
+fi
+
+# Configure hcloud with API key
+API_KEY=$(bashio::config 'api_key')
+if [ -z "${API_KEY}" ]; then
+    bashio::log.fatal "API key is not configured"
+    exit 1
+fi
+
+bashio::log.info "Configuring hcloud CLI with API key..."
+mkdir -p /root/.config/hcloud
+cat > /root/.config/hcloud/cli.toml << EOFCONFIG
+active_context = "default"
+
+[[contexts]]
+name = "default"
+token = "${API_KEY}"
+EOFCONFIG
+
+bashio::log.info "hcloud CLI configured successfully"
+
+# Test API connection
+if ! /usr/local/bin/hcloud version >/dev/null 2>&1; then
+    bashio::log.warning "Could not verify hcloud API connection"
+fi
+
+bashio::log.info "Initialization complete"
