@@ -6,12 +6,12 @@ FROM ${BUILD_FROM}
 COPY rootfs /
 
 # Setup base
+# Install required packages for DNS operations and API calls
 RUN apk add --no-cache \
     bind-tools=9.20.4-r0 \
     coreutils=9.8-r1 \
     curl=8.12.0-r1 \
-    jq=1.7.1-r0 \
-    wget=1.25.0-r2
+    jq=1.7.1-r0
 
 # Build arguments
 ARG BUILD_ARCH

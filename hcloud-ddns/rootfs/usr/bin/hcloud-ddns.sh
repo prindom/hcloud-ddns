@@ -2,8 +2,11 @@
 # shellcheck shell=bash
 # ==============================================================================
 # Hetzner Cloud DDNS Addon
-# Main DDNS update script
+# Main DDNS update script using Hetzner DNS API
 # ==============================================================================
+
+# API endpoint
+API_BASE="https://dns.hetzner.com/api/v1"
 
 # ------------------------------------------------------------------------------
 # Get current public IP address
@@ -56,7 +59,46 @@ get_dns_ip() {
 }
 
 # ------------------------------------------------------------------------------
-# Update DNS record via hcloud
+# Get API token from secure storage
+#
+# Returns:
+#   The API token
+# ------------------------------------------------------------------------------
+get_api_token() {
+    cat /root/.config/hetzner-dns-token
+}
+
+# ------------------------------------------------------------------------------
+# Find DNS record ID for a domain in a zone
+#
+# Arguments:
+#   $1 - API token
+#   $2 - Zone ID
+#   $3 - Domain name (fully qualified)
+# Returns:
+#   The record ID if found, empty string otherwise
+# ------------------------------------------------------------------------------
+find_record_id() {
+    local token=$1
+    local zone_id=$2
+    local domain=$3
+    local response
+    local record_id
+    
+    bashio::log.trace "${FUNCNAME[0]}"
+    
+    response=$(curl -s -H "Auth-API-Token: ${token}" \
+        "${API_BASE}/records?zone_id=${zone_id}")
+    
+    # Find the A record matching the domain
+    record_id=$(echo "${response}" | jq -r \
+        ".records[] | select(.type == \"A\" and .name == \"${domain}\") | .id")
+    
+    echo "${record_id}"
+}
+
+# ------------------------------------------------------------------------------
+# Create or update DNS record
 #
 # Arguments:
 #   $1 - Zone ID
@@ -69,71 +111,60 @@ update_dns() {
     local zone_id=$1
     local domain=$2
     local new_ip=$3
-    local zonefile
-    local record_name
-    local zone_name
+    local token
+    local record_id
+    local response
+    local http_code
     
     bashio::log.trace "${FUNCNAME[0]}"
     
-    # Export current zone file
-    bashio::log.info "Exporting zone file for zone ${zone_id}..."
-    if ! zonefile=$(/usr/local/bin/hcloud dns zone export "${zone_id}" 2>&1); then
-        bashio::log.error "Failed to export zone file: ${zonefile}"
-        return 1
-    fi
+    token=$(get_api_token)
     
-    # Extract zone name and record name
-    # If domain is "test.example.com" and zone is "example.com", record_name is "test"
-    zone_name=$(echo "${zonefile}" | grep -m1 "^\$ORIGIN" | awk '{print $2}' | sed 's/\.$//')
+    # Find existing record
+    bashio::log.info "Checking for existing DNS record..."
+    record_id=$(find_record_id "${token}" "${zone_id}" "${domain}")
     
-    if [ -z "${zone_name}" ]; then
-        bashio::log.error "Could not determine zone name from zone file"
-        return 1
-    fi
-    
-    bashio::log.debug "Zone name: ${zone_name}"
-    
-    # Calculate record name
-    if [ "${domain}" = "${zone_name}" ]; then
-        record_name="@"
-    else
-        record_name="${domain%."${zone_name}"}"
-    fi
-    
-    bashio::log.debug "Record name: ${record_name}"
-    
-    # Create temporary file for zone file
-    local temp_zonefile="/tmp/zonefile.txt"
-    echo "${zonefile}" > "${temp_zonefile}"
-    
-    # Check if record exists and update it, or add new record
-    if grep -q "^${record_name}[[:space:]]" "${temp_zonefile}" || \
-       ([ "${record_name}" = "@" ] && grep -q "^@[[:space:]]" "${temp_zonefile}"); then
-        # Update existing A record
-        bashio::log.info "Updating existing A record for ${record_name}..."
-        sed -i "s/^\(${record_name}[[:space:]]\+[0-9]\+[[:space:]]\+IN[[:space:]]\+A[[:space:]]\+\)[0-9.]\+/\1${new_ip}/" "${temp_zonefile}"
+    if [ -n "${record_id}" ]; then
+        # Update existing record
+        bashio::log.info "Updating existing A record (ID: ${record_id})..."
         
-        # Also handle @ records without explicit @
-        if [ "${record_name}" = "@" ]; then
-            sed -i "s/^\(@[[:space:]]\+[0-9]\+[[:space:]]\+IN[[:space:]]\+A[[:space:]]\+\)[0-9.]\+/\1${new_ip}/" "${temp_zonefile}"
+        response=$(curl -s -w "\n%{http_code}" -X PUT \
+            -H "Content-Type: application/json" \
+            -H "Auth-API-Token: ${token}" \
+            -d "{\"value\":\"${new_ip}\",\"ttl\":3600,\"type\":\"A\",\"name\":\"${domain}\",\"zone_id\":\"${zone_id}\"}" \
+            "${API_BASE}/records/${record_id}")
+        
+        http_code=$(echo "${response}" | tail -1)
+        
+        if [ "${http_code}" = "200" ]; then
+            bashio::log.info "DNS record updated successfully"
+            return 0
+        else
+            bashio::log.error "Failed to update DNS record (HTTP ${http_code})"
+            bashio::log.debug "Response: $(echo "${response}" | head -n -1)"
+            return 1
         fi
     else
-        # Add new A record
-        bashio::log.info "Adding new A record for ${record_name}..."
-        echo "${record_name} 3600 IN A ${new_ip}" >> "${temp_zonefile}"
+        # Create new record
+        bashio::log.info "Creating new A record..."
+        
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -H "Auth-API-Token: ${token}" \
+            -d "{\"value\":\"${new_ip}\",\"ttl\":3600,\"type\":\"A\",\"name\":\"${domain}\",\"zone_id\":\"${zone_id}\"}" \
+            "${API_BASE}/records")
+        
+        http_code=$(echo "${response}" | tail -1)
+        
+        if [ "${http_code}" = "200" ]; then
+            bashio::log.info "DNS record created successfully"
+            return 0
+        else
+            bashio::log.error "Failed to create DNS record (HTTP ${http_code})"
+            bashio::log.debug "Response: $(echo "${response}" | head -n -1)"
+            return 1
+        fi
     fi
-    
-    # Import updated zone file
-    bashio::log.info "Importing updated zone file..."
-    if ! /usr/local/bin/hcloud dns zone import "${zone_id}" --file "${temp_zonefile}" 2>&1; then
-        bashio::log.error "Failed to import zone file"
-        rm -f "${temp_zonefile}"
-        return 1
-    fi
-    
-    rm -f "${temp_zonefile}"
-    bashio::log.info "DNS record updated successfully"
-    return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -189,7 +220,7 @@ main() {
         exit 1
     fi
     
-    bashio::log.info "Hetzner Cloud DDNS starting..."
+    bashio::log.info "Hetzner DNS DDNS starting..."
     bashio::log.info "Zone ID: ${zone_id}"
     bashio::log.info "Domain: ${domain}"
     bashio::log.info "Update interval: ${update_interval}"

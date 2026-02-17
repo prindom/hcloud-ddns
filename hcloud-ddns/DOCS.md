@@ -1,18 +1,19 @@
 # Home Assistant Addon: Hetzner Cloud DDNS
 
-Automatically update your DNS records via Hetzner Cloud DNS to keep your domain pointing to your current IP address.
+Automatically update your DNS records via Hetzner DNS to keep your domain pointing to your current IP address.
 
 ## About
 
-This addon automatically updates DNS records in your Hetzner Cloud DNS zone to match your current public IP address. It's perfect for home servers with dynamic IP addresses.
+This addon automatically updates DNS records in your Hetzner DNS zone to match your current public IP address. It's perfect for home servers with dynamic IP addresses.
 
 Features:
 
 - Automatic IP detection from multiple sources
 - Configurable update intervals (hourly, daily, weekly)
-- Automatic download of the latest Hetzner Cloud CLI
+- Direct integration with Hetzner DNS API
 - Support for both amd64 and arm64 architectures
-- Uses Hetzner Cloud zone export/import for reliable DNS updates
+- Secure API token storage
+- Automatic creation of new DNS records if they don't exist
 
 ## Installation
 
@@ -38,21 +39,24 @@ log_level: "info"
 
 ### Option: `api_key` (required)
 
-Your Hetzner Cloud API key. You can create one in the Hetzner Cloud Console:
+Your Hetzner DNS API token. You can create one in the Hetzner DNS Console:
 
-1. Log in to [Hetzner Cloud Console](https://console.hetzner.cloud/)
-2. Select your project
-3. Go to Security → API Tokens
-4. Generate a new token with Read & Write permissions
+1. Log in to [Hetzner DNS Console](https://dns.hetzner.com/)
+2. Click on "API Tokens" in the left menu
+3. Click "Create access token"
+4. Give it a name and click "Create access token"
+5. Copy the token (you won't be able to see it again!)
+
+**Note**: This is different from the Hetzner Cloud API token. Make sure to use the DNS API token.
 
 ### Option: `zone_id` (required)
 
-The ID of your DNS zone in Hetzner Cloud. You can find this:
+The ID of your DNS zone in Hetzner DNS. You can find this:
 
-1. Log in to Hetzner Cloud Console
-2. Go to DNS
-3. Click on your zone
-4. The zone ID is shown in the URL or zone details
+1. Log in to [Hetzner DNS Console](https://dns.hetzner.com/)
+2. Click on your zone (domain)
+3. The zone ID is shown in the URL (e.g., `https://dns.hetzner.com/zone/ZONE_ID`)
+   or you can find it in the zone details
 
 ### Option: `domain` (required)
 
@@ -83,14 +87,14 @@ The log level for the addon. Options are:
 
 ## How It Works
 
-1. On startup, the addon downloads the latest Hetzner Cloud CLI for your architecture
-2. It configures the CLI with your API key
-3. Every interval (hourly/daily/weekly):
+1. On startup, the addon validates your API token and zone configuration
+2. Every interval (hourly/daily/weekly):
    - Detects your current public IP address
    - Queries your domain's current DNS record
-   - If they differ, exports your DNS zone file
-   - Updates the A record with your current IP
-   - Imports the updated zone file back to Hetzner Cloud
+   - If they differ:
+     - Checks if the DNS record exists
+     - Creates a new A record or updates the existing one
+     - Uses the Hetzner DNS API to apply the changes
 
 ## Support
 

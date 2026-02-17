@@ -1,4 +1,4 @@
-# Home Assistant Addon: Hetzner Cloud DDNS
+# Home Assistant Addon: Hetzner DNS DDNS
 
 [![GitHub Release][releases-shield]][releases]
 ![Project Stage][project-stage-shield]
@@ -11,19 +11,20 @@
 ![Project Maintenance][maintenance-shield]
 [![GitHub Activity][commits-shield]][commits]
 
-Automatically update DNS records via Hetzner Cloud DNS.
+Automatically update DNS records via Hetzner DNS API.
 
 ## About
 
-Automatically update your DNS records via Hetzner Cloud DNS to keep your domain pointing to your current IP address. Perfect for home servers with dynamic IP addresses.
+Automatically update your DNS records via Hetzner DNS to keep your domain pointing to your current IP address. Perfect for home servers with dynamic IP addresses.
 
 Features:
 
 - Automatic IP detection from multiple sources
 - Configurable update intervals (hourly, daily, weekly)
-- Automatic download of the latest Hetzner Cloud CLI
+- Direct integration with Hetzner DNS API
 - Support for both amd64 and arm64 architectures
-- Uses Hetzner Cloud zone export/import for reliable DNS updates
+- Secure API token storage
+- Automatic creation of new DNS records if they don't exist
 
 [:books: Read the full addon documentation][docs]
 
