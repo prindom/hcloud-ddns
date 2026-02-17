@@ -9,11 +9,11 @@ arch:
   - aarch64
   - amd64
 options:
-  api_key: ""
-  zone_id: ""
-  domain: ""
+  api_key: "asdf"
+  zone_id: "12345"
+  domain: "example.com"
   update_interval: "hourly"
-  log_level: "info"
+  log_level: "debug"
 schema:
   api_key: password
   zone_id: str
