@@ -36,19 +36,29 @@ if [ -z "${DOMAIN}" ]; then
     exit 1
 fi
 
-# Test API connection
-bashio::log.info "Testing Hetzner DNS API connection..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Auth-API-Token: ${API_KEY}" \
-    "https://dns.hetzner.com/api/v1/zones/${ZONE_ID}")
+# Test API connection and fetch zone name for use by main script
+bashio::log.info "Testing Hetzner Cloud API connection..."
+RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "Authorization: Bearer ${API_KEY}" \
+    "https://api.hetzner.cloud/v1/zones/${ZONE_ID}")
+
+HTTP_CODE=$(echo "${RESPONSE}" | tail -1)
+BODY=$(echo "${RESPONSE}" | head -n -1)
 
 if [ "${HTTP_CODE}" = "200" ]; then
-    bashio::log.info "DNS API connection successful"
+    ZONE_NAME=$(echo "${BODY}" | jq -r '.zone.name // empty')
+    if [ -z "${ZONE_NAME}" ]; then
+        bashio::log.fatal "Could not read zone name from API response"
+        exit 1
+    fi
+    echo "${ZONE_NAME}" > /root/.config/hetzner-zone-name
+    chmod 600 /root/.config/hetzner-zone-name
+    bashio::log.info "API connection successful (zone: ${ZONE_NAME})"
 elif [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "403" ]; then
-    bashio::log.fatal "Hetzner DNS API authentication failed (HTTP ${HTTP_CODE}). Check your API key and permissions."
+    bashio::log.fatal "Hetzner Cloud API authentication failed (HTTP ${HTTP_CODE}). Check your API key and permissions."
     exit 1
 elif [ "${HTTP_CODE}" = "404" ]; then
-    bashio::log.fatal "Hetzner DNS zone not found (HTTP 404). Check your zone ID and that the token has access to this zone."
+    bashio::log.fatal "Hetzner DNS zone not found (HTTP 404). Check your zone ID."
     exit 1
 else
     bashio::log.warning "Could not verify DNS zone (HTTP ${HTTP_CODE}). This may be a temporary issue, but configuration should be checked."

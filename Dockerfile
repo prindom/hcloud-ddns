@@ -5,13 +5,23 @@ FROM ${BUILD_FROM}
 # Copy root filesystem
 COPY rootfs /
 
+# Ensure all scripts are executable
+RUN chmod +x \
+    /etc/s6-overlay/s6-rc.d/init-hcloud/run \
+    /etc/s6-overlay/s6-rc.d/hcloud-ddns/run \
+    /etc/s6-overlay/s6-rc.d/hcloud-ddns/finish \
+    /etc/s6-overlay/s6-rc.d/hcloud-ddns-api/run \
+    /usr/bin/hcloud-ddns.sh \
+    /usr/bin/hcloud-ddns-api.py
+
 # Setup base
 # Install required packages for DNS operations and API calls
 RUN apk add --no-cache \
-    bind-tools=9.20.4-r0 \
-    coreutils=9.8-r1 \
-    curl=8.12.0-r1 \
-    jq=1.7.1-r0
+    bind-tools \
+    coreutils \
+    curl \
+    jq \
+    python3
 
 # Build arguments
 ARG BUILD_ARCH

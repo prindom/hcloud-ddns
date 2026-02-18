@@ -1,2 +1,4 @@
 .vscode
 .devcontainer
+dev/options.json
+my.config.yaml

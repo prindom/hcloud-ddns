@@ -12,6 +12,9 @@ configuration:
   update_interval:
     name: Update Interval
     description: How often to check and update the DNS record
+  dry_run:
+    name: Dry Run
+    description: Log what would be updated without making any changes to DNS records
   log_level:
     name: Log Level
     description: Controls the level of log output

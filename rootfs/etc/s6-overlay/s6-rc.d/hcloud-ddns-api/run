@@ -2,9 +2,9 @@
 # shellcheck shell=bash
 # ==============================================================================
 # Hetzner DNS DDNS Addon
-# Main service - runs the DDNS update script
+# API service - serves the force-update web UI
 # ==============================================================================
 
-bashio::log.info "Starting Hetzner DNS DDNS service..."
+bashio::log.info "Starting Hetzner DNS DDNS API server..."
 
-exec /usr/bin/hcloud-ddns.sh
+exec python3 /usr/bin/hcloud-ddns-api.py

@@ -1,0 +1,24 @@
+---
+services:
+  # Minimal mock of the HA Supervisor API so bashio::config works outside HA.
+  # Named "supervisor" so it is reachable via http://supervisor/ inside the network.
+  supervisor:
+    image: python:3.12-alpine
+    volumes:
+      - ./dev/options.json:/data/options.json:ro
+      - ./dev/supervisor-mock.py:/supervisor-mock.py:ro
+    command: python3 /supervisor-mock.py
+
+  hcloud-ddns:
+    build:
+      context: .
+      args:
+        BUILD_FROM: ghcr.io/hassio-addons/base:20.0.1
+    volumes:
+      - ./dev/options.json:/data/options.json:ro
+    environment:
+      - SUPERVISOR_TOKEN=dev-token
+    ports:
+      - "8099:8099"
+    depends_on:
+      - supervisor

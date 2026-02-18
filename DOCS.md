@@ -39,24 +39,22 @@ log_level: "info"
 
 ### Option: `api_key` (required)
 
-Your Hetzner DNS API token. You can create one in the Hetzner DNS Console:
+Your Hetzner Cloud API token. You can create one in the Hetzner Cloud Console:
 
-1. Log in to [Hetzner DNS Console](https://dns.hetzner.com/)
-2. Click on "API Tokens" in the left menu
-3. Click "Create access token"
-4. Give it a name and click "Create access token"
+1. Log in to [Hetzner Cloud Console](https://console.hetzner.cloud/)
+2. Select your project
+3. Go to **Security → API Tokens**
+4. Click **Generate API Token**, give it a name, and select **Read & Write**
 5. Copy the token (you won't be able to see it again!)
-
-**Note**: This is different from the Hetzner Cloud API token. Make sure to use the DNS API token.
 
 ### Option: `zone_id` (required)
 
-The ID of your DNS zone in Hetzner DNS. You can find this:
+The ID of your DNS zone in the Hetzner Cloud Console. You can find this:
 
-1. Log in to [Hetzner DNS Console](https://dns.hetzner.com/)
-2. Click on your zone (domain)
-3. The zone ID is shown in the URL (e.g., `https://dns.hetzner.com/zone/ZONE_ID`)
-   or you can find it in the zone details
+1. Log in to [Hetzner Cloud Console](https://console.hetzner.cloud/)
+2. Go to **DNS** in the left menu
+3. Click on your zone (domain)
+4. The zone ID is shown in the URL: `https://console.hetzner.cloud/dns/zones/ZONE_ID`
 
 ### Option: `domain` (required)
 
@@ -64,6 +62,14 @@ The fully qualified domain name to update (e.g., `home.example.com` or `example.
 
 - For root domain: use `example.com`
 - For subdomain: use `subdomain.example.com`
+
+### Option: `dry_run`
+
+When set to `true`, the addon runs normally — detecting your public IP and comparing it to the DNS record — but **never calls the Hetzner API to create or update records**. Any change that would be applied is logged as a notice instead.
+
+Use this to verify your configuration (API token, zone ID, domain) and see what the addon would do without touching live DNS.
+
+Default: `false`
 
 ### Option: `update_interval`
 
