@@ -79,36 +79,36 @@ get_zone_name() {
 }
 
 # ------------------------------------------------------------------------------
-# Find RRSet ID for an A record in a zone
+# Find the UUID of an existing A record in a zone
 #
 # Arguments:
 #   $1 - API token
 #   $2 - Zone ID
 #   $3 - Record name (relative, e.g. "home" or "@")
 # Returns:
-#   The RRSet ID if found, empty string otherwise
+#   The record UUID if found, empty string otherwise
 # ------------------------------------------------------------------------------
-find_rrset_id() {
+find_record_id() {
     local token=$1
     local zone_id=$2
     local record_name=$3
     local response
-    local rrset_id
+    local record_id
 
     bashio::log.trace "${FUNCNAME[0]}"
 
     response=$(curl -s \
         -H "Authorization: Bearer ${token}" \
-        "${API_BASE}/zones/${zone_id}/rrsets")
+        "${API_BASE}/zones/${zone_id}/records")
 
-    rrset_id=$(echo "${response}" | jq -r \
-        ".rrsets[] | select(.type == \"A\" and .name == \"${record_name}\") | .id")
+    record_id=$(echo "${response}" | jq -r \
+        ".records[] | select(.type == \"A\" and .name == \"${record_name}\") | .id")
 
-    echo "${rrset_id}"
+    echo "${record_id}"
 }
 
 # ------------------------------------------------------------------------------
-# Create or update DNS RRSet
+# Create or update DNS A record
 #
 # Arguments:
 #   $1 - Zone ID
@@ -122,7 +122,7 @@ update_dns() {
     local record_name=$2
     local new_ip=$3
     local token
-    local rrset_id
+    local record_id
     local response
     local http_code
     local body
@@ -130,21 +130,21 @@ update_dns() {
     bashio::log.trace "${FUNCNAME[0]}"
 
     token=$(get_api_token)
-    body="{\"name\":\"${record_name}\",\"type\":\"A\",\"ttl\":3600,\"records\":[{\"value\":\"${new_ip}\"}]}"
+    body="{\"name\":\"${record_name}\",\"type\":\"A\",\"ttl\":3600,\"value\":\"${new_ip}\"}"
 
-    # Find existing RRSet
+    # Find existing record
     bashio::log.info "Checking for existing DNS record..."
-    rrset_id=$(find_rrset_id "${token}" "${zone_id}" "${record_name}")
+    record_id=$(find_record_id "${token}" "${zone_id}" "${record_name}")
 
-    if [ -n "${rrset_id}" ]; then
-        # Update existing RRSet
-        bashio::log.info "Updating existing A record (ID: ${rrset_id})..."
+    if [ -n "${record_id}" ]; then
+        # Update existing record
+        bashio::log.info "Updating existing A record (ID: ${record_id})..."
 
         response=$(curl -s -w "\n%{http_code}" -X PUT \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${token}" \
             -d "${body}" \
-            "${API_BASE}/zones/${zone_id}/rrsets")
+            "${API_BASE}/zones/${zone_id}/records/${record_id}")
 
         http_code=$(echo "${response}" | tail -1)
 
@@ -157,14 +157,14 @@ update_dns() {
             return 1
         fi
     else
-        # Create new RRSet
+        # Create new record
         bashio::log.info "Creating new A record..."
 
         response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${token}" \
             -d "${body}" \
-            "${API_BASE}/zones/${zone_id}/rrsets")
+            "${API_BASE}/zones/${zone_id}/records")
 
         http_code=$(echo "${response}" | tail -1)
 
