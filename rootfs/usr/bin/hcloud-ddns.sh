@@ -144,7 +144,7 @@ update_dns() {
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${token}" \
             -d "${body}" \
-            "${API_BASE}/zones/${zone_id}/rrsets/${rrset_id}")
+            "${API_BASE}/zones/${zone_id}/rrsets")
 
         http_code=$(echo "${response}" | tail -1)
 
